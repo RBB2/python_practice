@@ -47,7 +47,7 @@ def compute_yhat(X):
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
-optim = torch.optim.SGD([W, b], lr = 1)
+
 
 def misclass_err(X,Y,y_hat,w,b):
 	#print(np.shape(y_hat))
@@ -69,8 +69,7 @@ def plot_log_loss(iterations, train_loss, dev_loss):
 def plot_misclassification(iterations, mis_class_err):
 	print(iterations)
 	print(mis_class_err)
-	# The lowest test error was 7.76 with step size 0.1
-	# The lowest test error was 7.38 with step size 1
+	# The lowest test error was 7.77 with step size 0.1
 	#plt.plot(iterations, train_loss, label='train log loss')
 	plt.plot(iterations, mis_class_err, label='test')
 	plt.legend(bbox_to_anchor=(0.4,0.9),loc=2,borderaxespad=0.)
@@ -81,6 +80,7 @@ def plot_misclassification(iterations, mis_class_err):
 
 def plot(plot_type):
 	iterations = []
+	optim = torch.optim.SGD([W, b], lr = 0.1, weight_decay=0.00001)
 
 	if plot_type == 'log_loss':
 		train_loss = []
@@ -106,16 +106,17 @@ def plot(plot_type):
 			y_hat_dev = model(X_torch_dev)
 			loss_dev = loss_fn(y_hat_dev, Y_torch_dev)
 		
-
-		if i % 500 == 0 and i > 200:
-			print('i', i, 'loss', loss.item(), 'miss err', miss_err)
-			iterations.append(i)
-			if plot_type == 'log_loss':
-				print('i', i, 'loss', loss.item())
+		#if i % 5 == 0:
+		if plot_type == 'log_loss':
+			if i % 500 == 0 or (i % 10 == 0 and i < 500):
+				iterations.append(i)
+				print('i', i, 'loss', loss.item(), 'dev', loss_dev.item())
 				train_loss.append(loss)
 				dev_loss.append(loss_dev)
-
-			if plot_type == 'misclassification':
+		else:
+			if i % 500 == 0 and i > 200:
+				#print('i', i, 'loss', loss.item(), 'miss err', miss_err)
+				iterations.append(i)
 				print('i', i, 'misclassification', miss_err)
 				mis_class_err.append(miss_err)
 
@@ -134,6 +135,7 @@ def plot(plot_type):
 		plot_log_loss(iterations,train_loss,dev_loss)
 
 def main():
+	plot('log_loss')
 	plot('misclassification')
 
 if __name__ == '__main__':
