@@ -47,7 +47,7 @@ def compute_yhat(X):
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
-optim = torch.optim.SGD([W, b], lr = 0.1)
+optim = torch.optim.SGD([W, b], lr = 1)
 
 def misclass_err(X,Y,y_hat,w,b):
 	#print(np.shape(y_hat))
@@ -57,43 +57,84 @@ def misclass_err(X,Y,y_hat,w,b):
 	#print(y_hat.shape[0])
 	return 100 * errors/(y_hat.shape[0]*1.0)
 
+def plot_log_loss(iterations, train_loss, dev_loss):
+	plt.plot(iterations, train_loss, label='train')
+	plt.plot(iterations, dev_loss, label='dev')
+	plt.legend(bbox_to_anchor=(0.4,0.9),loc=2,borderaxespad=0.)
+	plt.xlabel('iterations')
+	plt.ylabel('log loss')
+	plt.title('Train and Dev set log loss')
+	plt.show()
 
-iterations = []
-train_loss = []
-dev_loss = []
-mis_class_err = []
-min_error = 100
-for i in range(10000):
-	y_hat_np = compute_yhat(X_test)
-	miss_err = misclass_err(X_test,Y_test,y_hat_np,W,b)
-	if (miss_err < min_error):
-		min_error = miss_err
+def plot_misclassification(iterations, mis_class_err):
+	print(iterations)
+	print(mis_class_err)
+	# The lowest test error was 7.76 with step size 0.1
+	# The lowest test error was 7.38 with step size 1
+	#plt.plot(iterations, train_loss, label='train log loss')
+	plt.plot(iterations, mis_class_err, label='test')
+	plt.legend(bbox_to_anchor=(0.4,0.9),loc=2,borderaxespad=0.)
+	plt.xlabel('iterations')
+	plt.ylabel('misclassification error')
+	plt.title('Test set misclassification error')
+	plt.show()
 
-	y_hat_torch = model(X_torch)
-	loss = loss_fn(y_hat_torch, Y_torch)
-	#y_hat_dev = model(X_torch_dev)
-	#loss_dev = loss_fn(y_hat_dev, Y_torch_dev)
-	
+def plot(plot_type):
+	iterations = []
 
-	if i % 500 == 0 and i > 200:
-		print('i', i, 'loss', loss.item(), 'miss err', miss_err)
-		iterations.append(i)
-		#train_loss.append(loss)
-		#dev_loss.append(loss_dev)
-		mis_class_err.append(miss_err)
+	if plot_type == 'log_loss':
+		train_loss = []
+		dev_loss = []
 
-	optim.zero_grad()
-	loss.backward()
-	optim.step()
+	if plot_type == 'misclassification':
+		mis_class_err = []
+		min_error = 100
+	itr = 10000
+	for i in range(itr):
+		# log loss for train
+		y_hat_torch = model(X_torch)
+		loss = loss_fn(y_hat_torch, Y_torch)
 
-print(min_error)
+		# misclassification error on test set
+		if plot_type == 'misclassification':
+			y_hat_np = compute_yhat(X_test)
+			miss_err = misclass_err(X_test,Y_test,y_hat_np,W,b)
+			if (miss_err < min_error):
+				min_error = miss_err
+
+		if plot_type == 'log_loss':
+			y_hat_dev = model(X_torch_dev)
+			loss_dev = loss_fn(y_hat_dev, Y_torch_dev)
+		
+
+		if i % 500 == 0 and i > 200:
+			print('i', i, 'loss', loss.item(), 'miss err', miss_err)
+			iterations.append(i)
+			if plot_type == 'log_loss':
+				print('i', i, 'loss', loss.item())
+				train_loss.append(loss)
+				dev_loss.append(loss_dev)
+
+			if plot_type == 'misclassification':
+				print('i', i, 'misclassification', miss_err)
+				mis_class_err.append(miss_err)
+
+		optim.zero_grad()
+		loss.backward()
+		optim.step()
+
+	#print(train_loss)
+
+	if plot_type == 'misclassification':
+		print(min_error)
+		plot_misclassification(iterations,mis_class_err)
 
 
-#plt.plot(iterations, train_loss, label='train log loss')
-plt.plot(iterations, mis_class_err, label='test')
-plt.legend(bbox_to_anchor=(0.4,0.9),loc=2,borderaxespad=0.)
-plt.xlabel('iterations')
-plt.ylabel('misclassification error')
-plt.title('Test set misclassification error')
-plt.show()
+	if plot_type == 'log_loss':
+		plot_log_loss(iterations,train_loss,dev_loss)
 
+def main():
+	plot('misclassification')
+
+if __name__ == '__main__':
+    main()
